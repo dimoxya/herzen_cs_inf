@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graphs plot</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    (function () {
+        // Инициализация поля построения
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+
+        var init = function () {
+            // Регистрация реакции на изменение размеров окна браузера
+            window.addEventListener("resize", onResize);
+            onResize();
+
+            // Добавления поля построения в страницу
+            document.body.appendChild(canvas);
+        };
+
+        var onResize = function () {
+            // Растягивание поля построения на полный экран
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            // Очистка поля для перерисовки
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Построение
+            render();
+        };
+
+        var render = function () {
+            // Соотношение сторон экрана
+            // (необходимо для вычесления одного масштаба из второго, для совпадения количества пикселей на единицу функции)
+            var aspect = canvas.width / canvas.height;
+            var xMaxVal = 10;
+            var yMaxVal = xMaxVal / aspect;
+
+            // Пикселей по осям на единицу аргумента и значения функции
+            var yPointsPerVal = canvas.height / (yMaxVal * 2);
+            var xPointsPerVal = canvas.width / (xMaxVal * 2);
+
+            var aspectPlot = function (func) {
+                plotFuncInRange(ctx, func, canvas.width, canvas.height, xMaxVal, yMaxVal, 0, canvas.width);
+            };
+
+            // Оси
+
+            /* X: */ plotLine(ctx, 0, Math.round(canvas.height / 2), canvas.width, Math.round(canvas.height / 2), '#ff0000');
+            /* Y: */ plotLine(ctx, Math.round(canvas.width / 2), 0, Math.round(canvas.width / 2), canvas.height, '#ff0000');
+
+            // Метки
+
+            var i;
+
+            var x;
+            for (x = Math.round(canvas.width / 2) + xPointsPerVal, i = 1; x < canvas.width - 5; i++, x += xPointsPerVal) {
+                plotLine(ctx, x, Math.round(canvas.height / 2) - 20, x, Math.round(canvas.height / 2) + 20, '#00ff00');
+            }
+
+            for (x = Math.round(canvas.width / 2) - xPointsPerVal, i = 1; x > 5; i++, x -= xPointsPerVal) {
+                plotLine(ctx, x, Math.round(canvas.height / 2) - 20, x, Math.round(canvas.height / 2) + 20, '#00ff00');
+            }
+
+            var y;
+            for (y = Math.round(canvas.height / 2) + yPointsPerVal, i = 1; y < canvas.height - 5; i++, y += yPointsPerVal) {
+                plotLine(ctx, Math.round(canvas.width / 2) - 20, y, Math.round(canvas.width / 2) + 20, y, '#00ff00');
+            }
+
+            for (y = Math.round(canvas.height / 2) - yPointsPerVal, i = 1; y > 5; i++, y -= yPointsPerVal) {
+                plotLine(ctx, Math.round(canvas.width / 2) - 20, y, Math.round(canvas.width / 2) + 20, y, '#00ff00');
+            }
+
+            // Функции
+
+            aspectPlot(function (x) {return Math.tan(x)*Math.tan(x)-Math.log(x)-2;});
+            aspectPlot(function (x) {return 3+Math.sin(4*x)/(8*Math.cos(x));});
+            aspectPlot(function (x) {return Math.sqrt(Math.sin(x))*Math.cos(x);});
+            aspectPlot(function (x) {return Math.sin(Math.cos(Math.sin(x*x)));});
+            aspectPlot(function (x) {return x;});
+
+        };
+
+        var plotFuncInRange = function (ctx, func, xPoints, yPoints, xMaxVal, yMaxVal, fromX, toX) {
+            // Количество пикселей по горизонтали
+            var xCount = toX - fromX;
+
+            // Начальное и конечное значения аргумента функции при заданных начальном и конечном пиксели по горизонтали
+            // (необходимо для построения графика по частям)
+            var fromArg = -xMaxVal + (xMaxVal * 2 * (fromX / xPoints));
+            var toArg = -xMaxVal + (xMaxVal * 2 * (toX / xPoints));
+
+            // Получение значения функции для каждого пикселя по горизонтали
+            var results = funcResInRange(func, fromArg, toArg, xCount);
+
+            // Пикселей в единице по вертикали
+            var yPointsPerVal = yPoints / (yMaxVal * 2);
+
+            // Преобразование из значения функции в пиксели
+            var x2yPoints = results.map(function (val) {
+                return Math.round(yPoints/2 - (val * yPointsPerVal));
+            });
+
+            // Построение графика набором линий
+            for (var i = 1; i < xCount; i++) {
+                plotLine(ctx, fromX + i-1, x2yPoints[i-1], fromX + i, x2yPoints[i]);
+            }
+        };
+
+        var funcResInRange = function (func, fromArg, toArg, resCount) {
+            var funcStep = Math.abs(toArg - fromArg) / resCount;
+
+            var fResults = [];
+            var fArg = fromArg;
+
+            for (var i = 0; i < resCount; i++) {
+                fResults[i] = func(fArg);
+                fArg += funcStep;
+            }
+
+            return fResults;
+        };
+
+        var plotLine = function (ctx, x1, y1, x2, y2, color) {
+            if (color == null) color = '#000000';
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth  = 1.8;
+
+            ctx.stroke();
+        };
+
+        init();
+    })();
+</script>
+</body>
+</html>
